@@ -10,12 +10,12 @@ import java.util.List;
 @Document(collection = "orders")
 public class Order {
     @Id
-    public ObjectId _id;
+    private ObjectId _id;
 
-    public double TotalDue;
-    public Status Status;
-    public List<LineItem> items;
-    public List<Payment> payments = new ArrayList<>();
+    private double TotalDue;
+    private Status Status;
+    private List<LineItem> items;
+    private List<Payment> payments = new ArrayList<>();
 
     // ObjectId needs to be converted to string
     public String get_id() { return _id.toHexString(); }

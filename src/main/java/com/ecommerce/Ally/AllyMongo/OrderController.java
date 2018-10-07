@@ -52,15 +52,17 @@ public class OrderController {
         Order order = repository.findBy_id(orderid);
         if(order.equals(null))
             throw new Exception("Order " + payment.orderID + " doesn't exist");
-        order.payments.add(payment);
+        order.getPayments().add(payment);
         double newTotal = order.getTotalDue()-payment.amount;
         if(newTotal >= 0)
             order.setTotalDue(newTotal);
         else
             throw new Exception("Over Paid");
 
-        if(newTotal == 0)
+        if(newTotal == 0) {
             order.setStatus(Status.SHIPPED);
+            System.out.println(order.get_id()+ " Shipped");
+        }
 
         repository.save(order);
         return payment;
@@ -72,13 +74,13 @@ public class OrderController {
 
 
         double total = 0;
-        for( LineItem i : order.items){
+        for( LineItem i : order.getItems()){
             total += i.price * i.quantity;
         }
 
         Document result = new Document();
-        result.append("totaldue", total);
-        result.append("status", Status.WAITING_FOR_PAYMENT);
+        result.append("TotalDue", total);
+        result.append("Status", Status.WAITING_FOR_PAYMENT);
 
         order.setTotalDue(total);
         order.setStatus(Status.WAITING_FOR_PAYMENT);
