@@ -11,21 +11,62 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.Valid;
 import java.util.List;
 @RestController
-@RequestMapping("/order")
 public class OrderController {
     @Autowired
     private OrderRepository repository;
 
-    @RequestMapping(value = "/", method = RequestMethod.GET)
+    @RequestMapping(value = "/order/", method = RequestMethod.GET)
     public List<Order> getAllOrder() {
         return repository.findAll();
     }
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
-    public Order getOrderById(@PathVariable("id") ObjectId id) {
-        return repository.findBy_id(id);
+
+    @RequestMapping(value = "/orders/", method = RequestMethod.GET)
+    public Document getAllOrdersStatus() {
+        List<Order> orders = repository.findAll();
+        int NumberWaitingForPayment = 0;
+        int NumberShipped = 0;
+        for(Order o : orders){
+            if(o.getStatus() == Status.WAITING_FOR_PAYMENT)
+                NumberWaitingForPayment ++;
+            else if (o.getStatus() == Status.SHIPPED)
+                NumberShipped++;
+        }
+
+        Document result = new Document();
+        result.append("numberWaitingForPayment" , NumberWaitingForPayment);
+        result.append("numberShipped" , NumberShipped);
+        return result;
     }
 
-    @RequestMapping(value = "/", method = RequestMethod.POST)
+
+    @RequestMapping(value = "/order/{id}", method = RequestMethod.GET)
+    public Order getOrderById(@PathVariable("id") String id) {
+        ObjectId objID = new ObjectId(id);
+        Order order = repository.findBy_id(objID);
+        return order;
+    }
+
+    @RequestMapping(value = "/payment/", method = RequestMethod.POST)
+    public Payment createPayment (@Valid @RequestBody Payment payment) throws Exception{
+        ObjectId orderid = new ObjectId(payment.orderID);
+        Order order = repository.findBy_id(orderid);
+        if(order.equals(null))
+            throw new Exception("Order " + payment.orderID + " doesn't exist");
+        order.payments.add(payment);
+        double newTotal = order.getTotalDue()-payment.amount;
+        if(newTotal >= 0)
+            order.setTotalDue(newTotal);
+        else
+            throw new Exception("Over Paid");
+
+        if(newTotal == 0)
+            order.setStatus(Status.SHIPPED);
+
+        repository.save(order);
+        return payment;
+    }
+
+    @RequestMapping(value = "/order/", method = RequestMethod.POST)
     public Document createOrder(@Valid @RequestBody Order order) {
         order.set_id(ObjectId.get());
 
